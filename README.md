@@ -36,10 +36,13 @@ closed-loop control, like `ShuttleFSM`) reporting to and taking assignments
 from a fleet coordinator, with OTF-1 as the wire format between them.
 
 See [`docs/ai-advisory-layer-draft.md`](docs/ai-advisory-layer-draft.md)
-for an optional decision-support layer above the coordinator (event-
-triggered multi-agent deliberation, human-approved before anything
-dispatches to the fleet) and, more importantly, the hard boundary on why
-it can never sit in the safety-critical path.
+for the AI/human decision layer above the coordinator, split into two
+tiers: **Tier 0** is pre-approved, deterministic policy that fires
+instantly on time-critical physical threats (incoming debris, etc.) with
+no AI or human in that loop -- deliberation would itself be the hazard.
+**Tier 1** is slower multi-agent deliberation with human approval, for
+non-urgent decisions where taking a few minutes costs nothing. Neither
+tier ever sits in a pod's own safety-critical fault path.
 
 ## Open Questions
 
