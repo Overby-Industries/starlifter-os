@@ -35,6 +35,12 @@ a distributed system of independently-operating nodes (each running local
 closed-loop control, like `ShuttleFSM`) reporting to and taking assignments
 from a fleet coordinator, with OTF-1 as the wire format between them.
 
+See [`docs/ai-advisory-layer-draft.md`](docs/ai-advisory-layer-draft.md)
+for an optional decision-support layer above the coordinator (event-
+triggered multi-agent deliberation, human-approved before anything
+dispatches to the fleet) and, more importantly, the hard boundary on why
+it can never sit in the safety-critical path.
+
 ## Open Questions
 
 - Centralized coordinator vs. fully decentralized/swarm consensus -- which

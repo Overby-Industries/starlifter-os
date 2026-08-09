@@ -26,9 +26,12 @@ flowchart TB
 ## Design principles (draft)
 
 1. **Local autonomy first.** Given light-delay between Earth and cislunar/
-   belt operations, no node can depend on the coordinator for
+   belt operations, no node can depend on the coordinator -- or on the
+   [AI advisory layer](ai-advisory-layer-draft.md) above it -- for
    safety-critical decisions (collision avoidance, fault response). Those
    stay local, using the same pattern as `ShuttleFSM`'s `AbortSafeMode`.
+   A pod's own compute goes down with its own power failure; nothing its
+   safety response depends on can live anywhere but on the pod itself.
 2. **OTF-1 as the only wire format.** Nodes report status and coordinator
    sends assignments using [`telemetry-protocol`](https://github.com/Overby-Industries/telemetry-protocol)'s
    schema, rather than a bespoke protocol per node type.
