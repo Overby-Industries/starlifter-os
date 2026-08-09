@@ -41,13 +41,21 @@ minutes costs nothing.
 An optional, event-triggered, multi-agent deliberation layer for
 fleet-level decision *support* on non-urgent questions. Several LLM-backed
 agent roles debate a question, critique each other's proposals, and vote
-to a consensus recommendation, the same "roundtable" shape as a separate
-local prototype (`ai-chat-network`, built on Jaseci/Jac: a
-`RoundtableSession` walker runs multiple deliberation rounds, a critique
-phase, then a vote). That project's chat/web-app code isn't being pulled
-into this repo -- the transferable idea is the deliberate, multi-round,
+to a consensus recommendation. This is being built in
+[`Overby-Industries/ai-roundtable`](https://github.com/Overby-Industries/ai-roundtable),
+on Jaseci/Jac: a `RoundtableSession` walker will run multiple deliberation
+rounds, a critique phase, then a vote -- see that repo's
+[`docs/roundtable-design.md`](https://github.com/Overby-Industries/ai-roundtable/blob/main/docs/roundtable-design.md)
+for the target architecture. That repo's Jac engine was migrated from an
+earlier personal chat-app prototype (`ai-chat-network`); the prototype's
+Next.js chat UI and websocket server did not come over, and the migrated
+Jac code was ported to current jaclang/byllm syntax rather than copied
+as-is -- the transferable piece was the deliberate, multi-round,
 vote-to-consensus *pattern*, reimplemented for fleet decisions rather than
-open-ended chat.
+open-ended chat. As of this writing `ai-roundtable` has the underlying Jac
+chat-graph mechanics working and verified, but not yet the
+`RoundtableSession`/critique/vote logic itself -- that's the next phase of
+work there, not something either repo claims is done.
 
 ## What neither tier is
 
@@ -130,10 +138,11 @@ happened before that report is sent.
 - Which specific non-urgent events warrant Tier 1 deliberation vs. staying
   entirely within the coordinator's own deterministic logic.
 - Human-review timeout/expiry policy for Tier 1.
-- What agent roles make sense for Tier 1 fleet decisions -- the local
-  prototype's roles were civic/community-oriented; fleet decisions need
-  different expertise framing (logistics, safety officer, resource
-  economics), not a direct reuse of that role set.
+- What agent roles make sense for Tier 1 fleet decisions -- the original
+  prototype's roles were civic/community-oriented. `ai-roundtable`'s
+  `docs/roundtable-design.md` proposes a fleet-appropriate starting set
+  (Logistics Officer, Safety Officer, Resource Economist, Navigation/Comms
+  Officer), but that's a starting point for review, not a final answer.
 - One fleet-wide Tier 1 roundtable vs. scoped per-domain (mining-fleet
   decisions vs. transport scheduling might not belong in the same
   deliberation).
