@@ -1,0 +1,16 @@
+# CMake
+build/
+build-*/
+
+# Fleet simulation output
+*.jsonl
+
+# Compiler output (MSVC)
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,43 @@
+#pragma once
+
+// The whole test framework. No external dependency, for the same reason
+// the ledger and libcur have none: fleet software whose tests need a
+// package manager gets tested by fewer of the people it should be
+// checkable by.
+
+#include <cstdio>
+#include <string>
+
+namespace check {
+
+inline int& checks() { static int n = 0; return n; }
+inline int& failures() { static int n = 0; return n; }
+inline const char*& current() { static const char* name = ""; return name; }
+
+inline void record(bool ok, const char* expression, const char* file, int line) {
+    ++checks();
+    if (!ok) {
+        ++failures();
+        std::printf("  FAIL  %s\n        %s:%d  %s\n", current(), file, line, expression);
+    }
+}
+
+struct Scope {
+    explicit Scope(const char* name) {
+        current() = name;
+        std::printf("  %s\n", name);
+    }
+};
+
+}  // namespace check
+
+#define CHECK(expression) check::record((expression), #expression, __FILE__, __LINE__)
+#define CHECK_EQ(a, b) check::record((a) == (b), #a " == " #b, __FILE__, __LINE__)
+#define TEST(name) check::Scope test_scope_(name)
+
+void runJsonTests();
+void runTimeTests();
+void runOtf1Tests();
+void runNodeTests();
+void runCoordinatorTests();
+void runFleetTests();

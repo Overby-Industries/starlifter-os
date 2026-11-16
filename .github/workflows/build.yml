@@ -1,0 +1,55 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+  wire-format:
+    name: Fleet simulation emits valid OTF-1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install jsonschema
+        run: pip install jsonschema
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Run the fleet simulation
+        run: ./build/starlifter_fleet_sim --log fleet.otf1.jsonl --feed feed.otf1.jsonl
+
+      # The C++ encoder and decoder are tested against each other. This step
+      # is the independent check: every packet the simulation put on the wire
+      # is validated against the published JSON Schema by code that shares
+      # nothing with the C++.
+      - name: Validate every packet against the OTF-1 schema
+        run: python tools/check_wire_log.py fleet.otf1.jsonl feed.otf1.jsonl
