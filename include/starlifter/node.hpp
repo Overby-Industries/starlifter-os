@@ -29,8 +29,7 @@
 #include <vector>
 
 #include "starlifter/local_control.hpp"
-#include "starlifter/otf1.hpp"
-#include "starlifter/time.hpp"
+#include "starlifter/wire.hpp"
 
 namespace starlifter {
 

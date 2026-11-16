@@ -27,12 +27,12 @@ What is here:
 
 | Piece | Where | What it does |
 |---|---|---|
-| OTF-1 codec | `include/starlifter/otf1.hpp` | Typed packets, strict encode and decode, no dependencies |
+| OTF-1 | `telemetry-protocol/` (submodule) | The wire format and libotf1, its C++ implementation |
 | Fleet agent | `include/starlifter/node.hpp` | Runs on a vehicle: reports status, answers offers, keeps working out of contact |
 | Local control seam | `include/starlifter/local_control.hpp` | The line between fleet software and a vehicle's own control |
 | Coordinator | `include/starlifter/coordinator.hpp` | Fleet-wide state, contact supervision, task scheduler |
 | Simulator | `include/starlifter/sim.hpp`, `sim/main.cpp` | Coordinator, nodes and delayed, interruptible links on a simulated clock |
-| Tests | `tests/` | 501 checks, no framework, run under `ctest` |
+| Tests | `tests/` | 295 checks, no framework, run under `ctest` |
 
 What it is not: flight software. There is no radio, no real transport, no
 authentication, and the coordinator keeps its state in memory. See
@@ -40,9 +40,14 @@ authentication, and the coordinator keeps its state in memory. See
 
 ## Quick Start
 
-C++17 and CMake. No other dependencies.
+C++17 and CMake. The only dependency is
+[`telemetry-protocol`](https://github.com/Overby-Industries/telemetry-protocol),
+which comes along as a git submodule.
 
 ```bash
+git clone --recurse-submodules https://github.com/Overby-Industries/starlifter-os.git
+cd starlifter-os
+
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ctest --test-dir build --output-on-failure
@@ -50,13 +55,16 @@ ctest --test-dir build --output-on-failure
 ./build/starlifter_fleet_sim
 ```
 
+Already cloned without `--recurse-submodules`? Run
+`git submodule update --init` first.
+
 To check that everything the simulation put on the wire is valid OTF-1,
-using the published JSON Schema rather than this repo's own decoder:
+using the JSON Schema rather than the C++ that produced it:
 
 ```bash
 pip install jsonschema
 ./build/starlifter_fleet_sim --log fleet.otf1.jsonl --feed feed.otf1.jsonl
-python tools/check_wire_log.py fleet.otf1.jsonl feed.otf1.jsonl
+python telemetry-protocol/tools/validate.py fleet.otf1.jsonl feed.otf1.jsonl
 ```
 
 ## What the Simulation Shows
@@ -128,18 +136,15 @@ reported as in doubt and left where it is.
 ```
 starlifter-os/
 ├── include/starlifter/
-│   ├── otf1.hpp            # OTF-1 packets, encode(), decode()
 │   ├── node.hpp            # fleet agent (runs on the vehicle)
 │   ├── local_control.hpp   # the seam to per-vehicle control
 │   ├── coordinator.hpp     # fleet state and scheduler
 │   ├── sim.hpp             # simulated pods, links and clock
-│   ├── json.hpp            # minimal strict JSON, used only by otf1
-│   └── time.hpp            # millisecond UTC time and ISO-8601
+│   └── wire.hpp            # the OTF-1 names the fleet layer uses
 ├── src/                    # implementations of the above
 ├── sim/main.cpp            # starlifter_fleet_sim: the demo scenario
 ├── tests/                  # starlifter_tests, plain checks, no framework
-├── protocol/               # pinned copy of the OTF-1 schema and fixtures
-├── tools/check_wire_log.py # validates a wire log against the schema
+├── telemetry-protocol/     # submodule: the OTF-1 schema, libotf1, validator
 ├── docs/
 │   ├── architecture.md             # the system sketch and its principles
 │   ├── fleet-coordination.md       # how the built slice behaves, rule by rule
@@ -160,7 +165,9 @@ Starlifter OS sits *above* per-vehicle control, not in place of it:
 - **[`telemetry-protocol`](https://github.com/Overby-Industries/telemetry-protocol)**
   (OTF-1) is the wire format. This slice needed OTF-1 to carry more than
   mission events, so the format gained four fleet packet kinds: `status`,
-  `heartbeat`, `assignment` and `ack`. They are defined there, not here.
+  `heartbeat`, `assignment` and `ack`. They are defined there, not here,
+  and so is the C++ that reads and writes them. This repo takes it as a
+  submodule and contains no codec of its own.
 - **[`overby-transparency-protocol`](https://github.com/Overby-Industries/overby-transparency-protocol)**
   is the tamper-evident ledger an OTF-1 event can be appended to. The
   coordinator forwards every completed-work event verbatim on a feed for

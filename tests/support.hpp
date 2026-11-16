@@ -7,7 +7,7 @@
 
 #include "starlifter/coordinator.hpp"
 #include "starlifter/local_control.hpp"
-#include "starlifter/otf1.hpp"
+#include "starlifter/wire.hpp"
 
 namespace support {
 

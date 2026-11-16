@@ -16,6 +16,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true   # telemetry-protocol: the OTF-1 format and libotf1
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -31,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/setup-python@v5
         with:
@@ -47,9 +51,8 @@ jobs:
       - name: Run the fleet simulation
         run: ./build/starlifter_fleet_sim --log fleet.otf1.jsonl --feed feed.otf1.jsonl
 
-      # The C++ encoder and decoder are tested against each other. This step
-      # is the independent check: every packet the simulation put on the wire
-      # is validated against the published JSON Schema by code that shares
-      # nothing with the C++.
+      # Every packet the simulation put on the wire is validated against the
+      # OTF-1 JSON Schema by telemetry-protocol's own validator, which shares
+      # no code with the C++ that produced them.
       - name: Validate every packet against the OTF-1 schema
-        run: python tools/check_wire_log.py fleet.otf1.jsonl feed.otf1.jsonl
+        run: python telemetry-protocol/tools/validate.py fleet.otf1.jsonl feed.otf1.jsonl

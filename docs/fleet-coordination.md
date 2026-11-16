@@ -41,7 +41,10 @@ hands the other an object, and neither acts on a string its decoder rejects.
 ## The packets
 
 All five are OTF-1 and are defined in
-[`telemetry-protocol`](https://github.com/Overby-Industries/telemetry-protocol).
+[`telemetry-protocol`](https://github.com/Overby-Industries/telemetry-protocol),
+which also holds libotf1, the C++ that encodes and decodes them. This repo
+takes it as a submodule; `include/starlifter/wire.hpp` names the types the
+fleet layer uses.
 
 | Kind | Direction | Purpose |
 |---|---|---|
@@ -283,4 +286,5 @@ Each of these is listed under "Not Built Yet" in the [README](../README.md).
 | A returning node settles its own task | `tests/coordinator_tests.cpp`: "when a silent node is heard again, what it says decides the task" |
 | An outage mid-task loses nothing | `tests/fleet_tests.cpp`: "a node cut off mid-task finishes alone; the task is not duplicated or lost" |
 | Losing the coordinator does not halt the fleet | `tests/fleet_tests.cpp`: "with every link down at once, nodes keep working and the picture catches up" |
-| The decoder and the schema agree | `tests/otf1_tests.cpp`: "every example in the spec decodes..." and "every packet the schema rejects, the decoder rejects too" |
+| The decoder and the schema agree | In `telemetry-protocol`, where the codec lives: its C++ tests and `tools/differential.py` |
+| Everything the fleet sends is valid OTF-1 | CI validates the simulation's whole wire log against the JSON Schema |

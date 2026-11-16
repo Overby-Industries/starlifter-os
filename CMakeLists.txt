@@ -5,10 +5,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# OTF-1 is the only wire format (docs/architecture.md, principle 2). The
+# format and its C++ implementation, libotf1, live in the telemetry-protocol
+# repository, which is a git submodule here.
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/telemetry-protocol/CMakeLists.txt")
+    message(FATAL_ERROR
+        "The telemetry-protocol submodule is missing. Fetch it with:\n"
+        "    git submodule update --init\n"
+        "or clone with:  git clone --recurse-submodules <url>")
+endif()
+add_subdirectory(telemetry-protocol)
+
 add_library(starlifter STATIC
-    src/json.cpp
-    src/time.cpp
-    src/otf1.cpp
     src/node.cpp
     src/coordinator.cpp
     src/sim.cpp
@@ -20,6 +28,9 @@ target_include_directories(starlifter PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+
+# PUBLIC: the fleet layer's own headers are written in OTF-1 types.
+target_link_libraries(starlifter PUBLIC otf1::otf1)
 
 if(MSVC)
     target_compile_options(starlifter PRIVATE /W4 /permissive- /utf-8)
@@ -36,18 +47,11 @@ enable_testing()
 
 add_executable(starlifter_tests
     tests/main.cpp
-    tests/json_tests.cpp
-    tests/time_tests.cpp
-    tests/otf1_tests.cpp
     tests/node_tests.cpp
     tests/coordinator_tests.cpp
     tests/fleet_tests.cpp
 )
 target_link_libraries(starlifter_tests PRIVATE starlifter)
-# The decoder is tested against the same example and must-fail packets the
-# JSON Schema is, so the tests need to know where protocol/ is.
-target_compile_definitions(starlifter_tests PRIVATE
-    STARLIFTER_PROTOCOL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/protocol")
 if(MSVC)
     target_compile_options(starlifter_tests PRIVATE /utf-8)
     target_compile_options(starlifter_fleet_sim PRIVATE /utf-8)

@@ -38,8 +38,7 @@
 #include <string>
 #include <vector>
 
-#include "starlifter/otf1.hpp"
-#include "starlifter/time.hpp"
+#include "starlifter/wire.hpp"
 
 namespace starlifter {
 

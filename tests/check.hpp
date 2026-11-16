@@ -35,9 +35,6 @@ struct Scope {
 #define CHECK_EQ(a, b) check::record((a) == (b), #a " == " #b, __FILE__, __LINE__)
 #define TEST(name) check::Scope test_scope_(name)
 
-void runJsonTests();
-void runTimeTests();
-void runOtf1Tests();
 void runNodeTests();
 void runCoordinatorTests();
 void runFleetTests();

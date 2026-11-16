@@ -49,7 +49,7 @@ flowchart TB
 |---|---|---|
 | Local control FSM | `LocalControl` (`include/starlifter/local_control.hpp`) | An interface only. The simulation uses a stand-in pod. A `ShuttleFSM` adapter is not written. |
 | Local autonomy | `Node` (`include/starlifter/node.hpp`) | Covers what a node does about *fleet* matters when alone: finish the task, hold the default, keep the record. Station-keeping and collision avoidance stay behind `LocalControl`. |
-| OTF-1 telemetry, task assignment / commands | `encode()` / `decode()` (`include/starlifter/otf1.hpp`) | Assignments are offers a node may refuse, not commands. |
+| OTF-1 telemetry, task assignment / commands | `otf1::encode()` / `otf1::decode()` from libotf1, in the `telemetry-protocol` submodule | Assignments are offers a node may refuse, not commands. This repo has no codec of its own. |
 | Task scheduler, fleet-wide state | `Coordinator` (`include/starlifter/coordinator.hpp`) | One coordinator, state in memory. |
 | OTB-1 / OTF-1 aggregates to the dashboard | `Coordinator::feed()`, `Coordinator::summary()` | The feed is every completed-work event, verbatim. Nothing consumes it yet. |
 
