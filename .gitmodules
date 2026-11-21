@@ -1,0 +1,4 @@
+[submodule "telemetry-protocol"]
+	path = telemetry-protocol
+	url = https://github.com/Overby-Industries/telemetry-protocol.git
+	branch = main
