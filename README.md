@@ -32,7 +32,8 @@ What is here:
 | Local control seam | `include/starlifter/local_control.hpp` | The line between fleet software and a vehicle's own control |
 | Coordinator | `include/starlifter/coordinator.hpp` | Fleet-wide state, contact supervision, task scheduler |
 | Simulator | `include/starlifter/sim.hpp`, `sim/main.cpp` | Coordinator, nodes and delayed, interruptible links on a simulated clock |
-| Tests | `tests/` | 295 checks, no framework, run under `ctest` |
+| Ledger recording | `include/starlifter/ledger_feed.hpp`, `sim/publish.cpp` | Records the event feed in an Overby Ledger, stamps each event with a coordinate, and verifies a stamped feed |
+| Tests | `tests/` | 424 checks, no framework, run under `ctest` |
 
 What it is not: flight software. There is no radio, no real transport, no
 authentication, and the coordinator keeps its state in memory. See
@@ -56,7 +57,8 @@ ctest --test-dir build --output-on-failure
 ```
 
 Already cloned without `--recurse-submodules`? Run
-`git submodule update --init` first.
+`git submodule update --init --recursive` first. The ledger submodule nests
+the OTB-1 library it needs.
 
 To check that everything the simulation put on the wire is valid OTF-1,
 using the JSON Schema rather than the C++ that produced it:
@@ -66,6 +68,49 @@ pip install jsonschema
 ./build/starlifter_fleet_sim --log fleet.otf1.jsonl --feed feed.otf1.jsonl
 python telemetry-protocol/tools/validate.py fleet.otf1.jsonl feed.otf1.jsonl
 ```
+
+## Recording the Feed in a Ledger
+
+The coordinator's event feed is the public record: every completed task, as an
+OTF-1 event. `starlifter_publish` records it in an
+[Overby Ledger](https://github.com/Overby-Industries/overby-transparency-protocol),
+a free, hash-chained, append-only record, and returns each event stamped with a
+coordinate in its `ProofOfCleanupToken` field.
+
+```bash
+./build/starlifter_fleet_sim --quiet --feed feed.otf1.jsonl
+
+# Record it. A new ledger has to be named; an entry that does not say which
+# ledger it belongs to is exactly the confusion the name exists to prevent.
+./build/starlifter_publish --feed feed.otf1.jsonl --ledger ledger.otp \
+    --out stamped.otf1.jsonl --instance starlifter-sim
+
+# Anyone holding a copy of the ledger can check the stamped feed.
+./build/starlifter_publish --verify stamped.otf1.jsonl --ledger ledger.otp
+```
+
+```
+ledger "starlifter-sim": 8 event(s) recorded, 0 already there; now 8 entries (was 0)
+all 8 event(s) verify against ledger "starlifter-sim" (8 entries, intact)
+```
+
+- **Each entry commits to its event.** A coordinate alone proves an entry exists
+  and is unaltered; it does not prove the entry is about the event carrying it.
+  So the entry holds a SHA-256 digest of the event, and verification compares the
+  two. A token lifted from one event into another does not verify.
+- **An event is dated when it happened.** A pod that finished during an outage
+  and reported minutes later is recorded at the instant of completion.
+- **Recording is idempotent.** Replaying the feed, or a coordinator that restarts
+  and re-sends, records nothing twice, so a capture is never double-counted
+  toward the cleanup index.
+- **It is all or nothing.** If any event is refused, neither the ledger file nor
+  the output is written, and the message says which event and why.
+- **An existing token is never overwritten** unless asked. A legacy chain token
+  in an event is evidence.
+
+The stamped events are still valid OTF-1: the coordinate is an ordinary string in
+a field the schema already has. CI checks that, and checks that an altered event
+does not verify.
 
 ## What the Simulation Shows
 
@@ -140,11 +185,14 @@ starlifter-os/
 │   ├── local_control.hpp   # the seam to per-vehicle control
 │   ├── coordinator.hpp     # fleet state and scheduler
 │   ├── sim.hpp             # simulated pods, links and clock
+│   ├── ledger_feed.hpp     # publish an event feed through the ledger bridge, verify it
 │   └── wire.hpp            # the OTF-1 names the fleet layer uses
 ├── src/                    # implementations of the above
 ├── sim/main.cpp            # starlifter_fleet_sim: the demo scenario
+├── sim/publish.cpp         # starlifter_publish: record a feed in a ledger, verify one
 ├── tests/                  # starlifter_tests, plain checks, no framework
 ├── telemetry-protocol/     # submodule: the OTF-1 schema, libotf1, validator
+├── ledger/                 # submodule: the Overby Ledger and its OTF-1/OTB-1 bridge
 ├── docs/
 │   ├── architecture.md             # the system sketch and its principles
 │   ├── fleet-coordination.md       # how the built slice behaves, rule by rule
@@ -169,9 +217,11 @@ Starlifter OS sits *above* per-vehicle control, not in place of it:
   and so is the C++ that reads and writes them. This repo takes it as a
   submodule and contains no codec of its own.
 - **[`overby-transparency-protocol`](https://github.com/Overby-Industries/overby-transparency-protocol)**
-  is the tamper-evident ledger an OTF-1 event can be appended to. The
-  coordinator forwards every completed-work event verbatim on a feed for
-  exactly that kind of consumer; nothing publishes the feed yet.
+  is the tamper-evident ledger an OTF-1 event is appended to. The coordinator
+  forwards every completed-work event verbatim on a feed, and
+  `starlifter_publish` records that feed in a ledger through the ledger's
+  bridge (see [Recording the Feed in a Ledger](#recording-the-feed-in-a-ledger)).
+  This repo takes it as a submodule.
 - **[`miner-automation`](https://github.com/Overby-Industries/miner-automation)**
   and **[`satnav-swarm`](https://github.com/Overby-Industries/satnav-swarm)**
   are examples of the kind of node this OS would need to coordinate.

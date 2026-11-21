@@ -243,6 +243,29 @@ done. There is no cancel message, and guessing which side is right is how a
 second vehicle gets sent. The simulation exits non-zero if a run produces
 one.
 
+### The public record
+
+`Coordinator::feed()` holds every completed-work event, verbatim and in arrival
+order. It is the only thing that leaves the fleet as record; status, heartbeat,
+assignment and ack are bookkeeping and stay inside it.
+
+`starlifter_publish` (`include/starlifter/ledger_feed.hpp`) records that feed in
+an Overby Ledger through the ledger's OTF-1 bridge. Each event becomes a named
+entry for its pod whose detail commits to a SHA-256 digest of the event, and the
+event comes back with the entry's coordinate in its `ProofOfCleanupToken`.
+
+Three properties of the coordinator carry through to the record:
+
+- **One event per task and pod.** The coordinator records a completion once
+  however often it arrives, so the feed has no duplicates to double-count. The
+  ledger independently refuses to record the same event twice, so a replayed or
+  re-sent feed is harmless.
+- **An event is dated when the work happened.** A node holds its completion on
+  board through an outage and sends it when contact returns; its timestamp is
+  the instant of completion, and that is what the ledger records.
+- **A failed task is not a record.** A vehicle that safes itself mid-task
+  produces no event, because an event claims something happened to material.
+
 ## Timing
 
 Defaults, all configurable.
@@ -286,5 +309,7 @@ Each of these is listed under "Not Built Yet" in the [README](../README.md).
 | A returning node settles its own task | `tests/coordinator_tests.cpp`: "when a silent node is heard again, what it says decides the task" |
 | An outage mid-task loses nothing | `tests/fleet_tests.cpp`: "a node cut off mid-task finishes alone; the task is not duplicated or lost" |
 | Losing the coordinator does not halt the fleet | `tests/fleet_tests.cpp`: "with every link down at once, nodes keep working and the picture catches up" |
+| An event feed is recorded once, dated when it happened, and checkable | `tests/ledger_feed_tests.cpp`: a real feed from a fleet with an outage and a fault is published, stamped and verified; replaying it records nothing twice |
+| An altered event, or a lifted token, does not verify | `tests/ledger_feed_tests.cpp`: "a stamped event that was altered, or a token lifted from another, does not verify" |
 | The decoder and the schema agree | In `telemetry-protocol`, where the codec lives: its C++ tests and `tools/differential.py` |
 | Everything the fleet sends is valid OTF-1 | CI validates the simulation's whole wire log against the JSON Schema |
