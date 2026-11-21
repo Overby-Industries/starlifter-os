@@ -2,8 +2,9 @@
 build/
 build-*/
 
-# Fleet simulation output
+# Fleet simulation output, and ledgers written by starlifter_publish
 *.jsonl
+*.otp
 
 # Compiler output (MSVC)
 *.obj

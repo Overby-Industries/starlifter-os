@@ -17,7 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true   # telemetry-protocol: the OTF-1 format and libotf1
+          # telemetry-protocol (OTF-1) and the ledger, which nests the OTB-1 library
+          submodules: recursive
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -34,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
 
       - uses: actions/setup-python@v5
         with:
@@ -56,3 +57,23 @@ jobs:
       # no code with the C++ that produced them.
       - name: Validate every packet against the OTF-1 schema
         run: python telemetry-protocol/tools/validate.py fleet.otf1.jsonl feed.otf1.jsonl
+
+      # The coordinator's event feed is the public record. Record it in a
+      # ledger, and check that what comes back is still OTF-1, that it verifies
+      # against the ledger, and that an altered event does not.
+      - name: Record the event feed in a ledger and stamp it
+        run: ./build/starlifter_publish --feed feed.otf1.jsonl --ledger ledger.otp --out stamped.otf1.jsonl --instance starlifter-sim
+
+      - name: Stamped events are still valid OTF-1
+        run: python telemetry-protocol/tools/validate.py stamped.otf1.jsonl
+
+      - name: Stamped events verify against the ledger
+        run: ./build/starlifter_publish --verify stamped.otf1.jsonl --ledger ledger.otp
+
+      - name: An altered event must not verify
+        run: |
+          sed '1s/"processedKg":[0-9.]*/"processedKg":9999/' stamped.otf1.jsonl > tampered.otf1.jsonl
+          if cmp -s stamped.otf1.jsonl tampered.otf1.jsonl; then echo "the edit changed nothing"; exit 1; fi
+          if ./build/starlifter_publish --verify tampered.otf1.jsonl --ledger ledger.otp; then
+            echo "an altered event verified"; exit 1
+          fi

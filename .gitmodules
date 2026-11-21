@@ -2,3 +2,6 @@
 	path = telemetry-protocol
 	url = https://github.com/Overby-Industries/telemetry-protocol.git
 	branch = main
+[submodule "ledger"]
+	path = ledger
+	url = https://github.com/Overby-Industries/overby-transparency-protocol.git
