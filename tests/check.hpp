@@ -38,3 +38,4 @@ struct Scope {
 void runNodeTests();
 void runCoordinatorTests();
 void runFleetTests();
+void runLedgerFeedTests();

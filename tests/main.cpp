@@ -17,6 +17,7 @@ int main() {
     runNodeTests();
     runCoordinatorTests();
     runFleetTests();
+    runLedgerFeedTests();
 
     std::printf("\n%d checks, %d failures\n", check::checks(), check::failures());
     return check::failures() == 0 ? 0 : 1;
